@@ -17,7 +17,7 @@ class PlantIdentificationAPI {
 
     // Main identification method - tries multiple APIs
     async identifyPlant(imageData, options = {}) {
-        const { preferredAPI = 'plantNet', fallbackAPIs = ['plantId', 'googleVision'] } = options;
+        const { preferredAPI = 'plantNet', fallbackAPIs = ['plantId', 'googleVision'], quick = false, includeDiseaseDetection = false, includeCareInstructions = true } = options;
         
         try {
             // Try preferred API first
@@ -42,7 +42,11 @@ class PlantIdentificationAPI {
         }
 
         // If all APIs fail, return mock data
-        return this.getMockPlantData();
+        const mockData = this.getMockPlantData();
+        if (includeDiseaseDetection) {
+            mockData.diseaseInfo = this.generateDiseaseInfo(mockData);
+        }
+        return mockData;
     }
 
     async callAPI(apiName, imageData) {
@@ -345,6 +349,15 @@ class PlantIdentificationAPI {
         ];
         
         return mockPlants[Math.floor(Math.random() * mockPlants.length)];
+    }
+
+    generateDiseaseInfo(plant) {
+        const diseases = [
+            { status: 'Healthy', recommendations: 'Continue current care routine' },
+            { status: 'Slight yellowing', recommendations: 'Check watering schedule and light exposure' },
+            { status: 'Good condition', recommendations: 'Plant appears healthy, maintain regular care' }
+        ];
+        return diseases[Math.floor(Math.random() * diseases.length)];
     }
 }
 
