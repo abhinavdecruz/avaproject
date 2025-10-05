@@ -3,16 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plant Identifier - Camera App</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Ava's Plant Identifier - Smart Camera App</title>
+    <link rel="stylesheet" href="enhanced-styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1><i class="fas fa-seedling"></i> Plant Identifier</h1>
-            <p>Point your camera at any plant to identify it instantly</p>
+            <div class="header-content">
+                <h1><i class="fas fa-seedling"></i> Ava's Plant Identifier</h1>
+                <p>Hi Ava! 🌱 Point your camera at any plant to identify it instantly</p>
+                <div class="header-controls">
+                    <button id="themeToggle" class="theme-toggle" title="Toggle Dark Mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button id="galleryBtn" class="gallery-btn" title="View Plant Gallery">
+                        <i class="fas fa-images"></i>
+                    </button>
+                </div>
+            </div>
         </header>
 
         <main class="main-content">
@@ -80,10 +90,75 @@
                     <button id="retryBtn" class="btn btn-primary">Try Again</button>
                 </div>
             </div>
+
+            <!-- Plant Gallery Section -->
+            <div id="gallerySection" class="gallery-section" style="display: none;">
+                <div class="gallery-container">
+                    <div class="gallery-header">
+                        <h2><i class="fas fa-images"></i> Ava's Plant Collection</h2>
+                        <button id="backToCameraBtn" class="btn btn-secondary">
+                            <i class="fas fa-camera"></i> Back to Camera
+                        </button>
+                    </div>
+                    <div class="gallery-stats">
+                        <div class="stat">
+                            <i class="fas fa-seedling"></i>
+                            <span id="totalPlants">0</span>
+                            <small>Plants Identified</small>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-heart"></i>
+                            <span id="favoritePlants">0</span>
+                            <small>Favorites</small>
+                        </div>
+                        <div class="stat">
+                            <i class="fas fa-calendar"></i>
+                            <span id="careReminders">0</span>
+                            <small>Care Reminders</small>
+                        </div>
+                    </div>
+                    <div id="plantGallery" class="plant-gallery">
+                        <!-- Plant cards will be populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plant Collection Management -->
+            <div id="collectionSection" class="collection-section" style="display: none;">
+                <div class="collection-container">
+                    <h2><i class="fas fa-leaf"></i> Manage Your Plants</h2>
+                    <div class="collection-actions">
+                        <button id="addToCollectionBtn" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add to Collection
+                        </button>
+                        <button id="setReminderBtn" class="btn btn-secondary">
+                            <i class="fas fa-bell"></i> Set Care Reminder
+                        </button>
+                        <button id="sharePlantBtn" class="btn btn-secondary">
+                            <i class="fas fa-share"></i> Share Plant
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AR Overlay Section -->
+            <div id="arOverlay" class="ar-overlay" style="display: none;">
+                <div class="ar-info">
+                    <div class="ar-plant-info">
+                        <h3 id="arPlantName">Plant Name</h3>
+                        <p id="arPlantConfidence">Confidence: 95%</p>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <footer class="footer">
-            <p>Powered by AI Plant Recognition Technology</p>
+            <p>Made with 💚 for Ava - Powered by AI Plant Recognition Technology</p>
+            <div class="footer-links">
+                <button id="aboutBtn" class="footer-link">About</button>
+                <button id="helpBtn" class="footer-link">Help</button>
+                <button id="settingsBtn" class="footer-link">Settings</button>
+            </div>
         </footer>
     </div>
 
