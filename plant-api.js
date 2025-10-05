@@ -3,7 +3,7 @@ class PlantIdentificationAPI {
     constructor() {
         // You can replace these with actual API keys
         this.apiKeys = {
-            plantNet: 'YOUR_PLANTNET_API_KEY',
+            plantNet: '2b10x83uNKCIS37PaJL1tjjT9',
             plantId: 'YOUR_PLANTID_API_KEY',
             googleVision: 'YOUR_GOOGLE_VISION_API_KEY'
         };
