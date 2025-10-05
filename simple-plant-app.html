@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ava's Plant Identifier</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .camera-section {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 2rem;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            background: #000;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .focus-frame {
+            width: 200px;
+            height: 200px;
+            border: 3px solid #4ade80;
+            border-radius: 50%;
+            position: relative;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.05); }
+        }
+
+        .camera-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .capture-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background: #4ade80;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .capture-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .switch-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid white;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-preview {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 2rem;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        #capturedImage {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+        }
+
+        .preview-controls {
+            padding: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: #4ade80;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .loading-section {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4ade80;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-section {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 2rem;
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .plant-info {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #4ade80;
+        }
+
+        .plant-info h3 {
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+            font-size: 1.3rem;
+        }
+
+        .plant-info p {
+            color: #6b7280;
+            line-height: 1.6;
+        }
+
+        .scientific-name {
+            font-style: italic;
+            color: #059669;
+            font-weight: 500;
+        }
+
+        .confidence {
+            display: inline-block;
+            background: #4ade80;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .error-section {
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 2rem;
+            background: white;
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .error-section i {
+            font-size: 3rem;
+            color: #ef4444;
+            margin-bottom: 1rem;
+        }
+
+        .error-section h3 {
+            color: #1f2937;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .error-section p {
+            color: #6b7280;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .upload-section {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            margin-bottom: 2rem;
+        }
+
+        .upload-section h3 {
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 1rem 2rem;
+            background: #4ade80;
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .file-label:hover {
+            background: #22c55e;
+            transform: translateY(-2px);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            color: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .camera-container {
+                height: 350px;
+            }
+            
+            .focus-frame {
+                width: 150px;
+                height: 150px;
+            }
+            
+            .capture-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.2rem;
+            }
+            
+            .switch-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🌱 Ava's Plant Identifier</h1>
+            <p>Hi Ava! Point your camera at any plant to identify it instantly</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Camera Section -->
+            <div id="cameraSection" class="camera-section">
+                <div class="camera-container">
+                    <video id="video" autoplay muted playsinline></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    <div class="camera-overlay">
+                        <div class="focus-frame"></div>
+                        <div class="camera-controls">
+                            <button id="captureBtn" class="capture-btn">📸</button>
+                            <button id="switchCameraBtn" class="switch-btn">🔄</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div id="uploadSection" class="upload-section">
+                <h3>Or upload a photo instead:</h3>
+                <input type="file" id="fileInput" class="file-input" accept="image/*">
+                <label for="fileInput" class="file-label">📁 Choose Photo</label>
+            </div>
+
+            <!-- Image Preview -->
+            <div id="imagePreview" class="image-preview hidden">
+                <img id="capturedImage" alt="Captured plant">
+                <div class="preview-controls">
+                    <button id="retakeBtn" class="btn btn-secondary">🔄 Retake</button>
+                    <button id="identifyBtn" class="btn btn-primary">🔍 Identify Plant</button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loadingSection" class="loading-section hidden">
+                <div class="loading-spinner"></div>
+                <p>Analyzing your plant, Ava...</p>
+            </div>
+
+            <!-- Results -->
+            <div id="resultsSection" class="results-section hidden">
+                <div id="plantDetails"></div>
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button id="identifyAnotherBtn" class="btn btn-primary">📸 Identify Another Plant</button>
+                </div>
+            </div>
+
+            <!-- Error -->
+            <div id="errorSection" class="error-section hidden">
+                <i>⚠️</i>
+                <h3>Camera Access Required</h3>
+                <p id="errorMessage">Unable to access camera</p>
+                <button id="retryBtn" class="btn btn-primary">Try Again</button>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Made with 💚 for Ava - Powered by AI Plant Recognition</p>
+        </footer>
+    </div>
+
+    <script>
+        class SimplePlantApp {
+            constructor() {
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.capturedImage = document.getElementById('capturedImage');
+                this.stream = null;
+                this.currentFacingMode = 'environment';
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.initializeCamera();
+            }
+
+            initializeElements() {
+                this.captureBtn = document.getElementById('captureBtn');
+                this.switchCameraBtn = document.getElementById('switchCameraBtn');
+                this.retakeBtn = document.getElementById('retakeBtn');
+                this.identifyBtn = document.getElementById('identifyBtn');
+                this.identifyAnotherBtn = document.getElementById('identifyAnotherBtn');
+                this.retryBtn = document.getElementById('retryBtn');
+                this.fileInput = document.getElementById('fileInput');
+                
+                this.cameraSection = document.getElementById('cameraSection');
+                this.uploadSection = document.getElementById('uploadSection');
+                this.imagePreview = document.getElementById('imagePreview');
+                this.loadingSection = document.getElementById('loadingSection');
+                this.resultsSection = document.getElementById('resultsSection');
+                this.errorSection = document.getElementById('errorSection');
+                this.plantDetails = document.getElementById('plantDetails');
+                this.errorMessage = document.getElementById('errorMessage');
+            }
+
+            setupEventListeners() {
+                this.captureBtn.addEventListener('click', () => this.capturePhoto());
+                this.switchCameraBtn.addEventListener('click', () => this.switchCamera());
+                this.retakeBtn.addEventListener('click', () => this.retakePhoto());
+                this.identifyBtn.addEventListener('click', () => this.identifyPlant());
+                this.identifyAnotherBtn.addEventListener('click', () => this.resetToCamera());
+                this.retryBtn.addEventListener('click', () => this.retry());
+                this.fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+            }
+
+            async initializeCamera() {
+                try {
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error('Camera not supported');
+                    }
+
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: this.currentFacingMode }
+                    });
+
+                    this.video.srcObject = this.stream;
+                    this.video.play();
+                    
+                    this.hideAllSections();
+                    this.cameraSection.classList.remove('hidden');
+                    
+                } catch (error) {
+                    console.error('Camera error:', error);
+                    this.showError('Camera not available. Please use the upload option below.');
+                }
+            }
+
+            async switchCamera() {
+                try {
+                    if (this.stream) {
+                        this.stream.getTracks().forEach(track => track.stop());
+                    }
+                    this.currentFacingMode = this.currentFacingMode === 'environment' ? 'user' : 'environment';
+                    await this.initializeCamera();
+                } catch (error) {
+                    this.showError('Could not switch camera');
+                }
+            }
+
+            capturePhoto() {
+                try {
+                    this.canvas.width = this.video.videoWidth;
+                    this.canvas.height = this.video.videoHeight;
+                    const context = this.canvas.getContext('2d');
+                    context.drawImage(this.video, 0, 0);
+                    const imageDataUrl = this.canvas.toDataURL('image/jpeg', 0.8);
+                    this.capturedImage.src = imageDataUrl;
+                    this.hideAllSections();
+                    this.imagePreview.classList.remove('hidden');
+                } catch (error) {
+                    this.showError('Could not capture photo');
+                }
+            }
+
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.capturedImage.src = e.target.result;
+                    this.hideAllSections();
+                    this.imagePreview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            retakePhoto() {
+                this.hideAllSections();
+                this.cameraSection.classList.remove('hidden');
+            }
+
+            async identifyPlant() {
+                try {
+                    this.hideAllSections();
+                    this.loadingSection.classList.remove('hidden');
+
+                    // Simulate API call
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    const plantData = this.getMockPlantData();
+                    this.displayPlantResults(plantData);
+                    
+                } catch (error) {
+                    this.showError('Could not identify plant');
+                }
+            }
+
+            getMockPlantData() {
+                const plants = [
+                    {
+                        name: "Monstera Deliciosa",
+                        scientificName: "Monstera deliciosa",
+                        commonNames: ["Swiss Cheese Plant", "Split-leaf Philodendron"],
+                        confidence: 95,
+                        description: "A popular houseplant known for its large, glossy leaves with natural holes. Native to tropical forests of Central America.",
+                        care: {
+                            light: "Bright, indirect light",
+                            water: "Water when top inch of soil is dry",
+                            humidity: "High humidity preferred",
+                            temperature: "65-85°F (18-29°C)"
+                        }
+                    },
+                    {
+                        name: "Snake Plant",
+                        scientificName: "Dracaena trifasciata",
+                        commonNames: ["Mother-in-law's Tongue", "Sansevieria"],
+                        confidence: 88,
+                        description: "An extremely hardy succulent plant with upright, sword-like leaves. Perfect for beginners and low-light conditions.",
+                        care: {
+                            light: "Low to bright indirect light",
+                            water: "Water sparingly, let soil dry completely",
+                            humidity: "Low humidity tolerant",
+                            temperature: "60-85°F (15-29°C)"
+                        }
+                    },
+                    {
+                        name: "Fiddle Leaf Fig",
+                        scientificName: "Ficus lyrata",
+                        commonNames: ["Fiddle Leaf Fig", "Banjo Fig"],
+                        confidence: 92,
+                        description: "A trendy houseplant with large, violin-shaped leaves. Requires consistent care but rewards with dramatic foliage.",
+                        care: {
+                            light: "Bright, indirect light",
+                            water: "Water when top inch of soil is dry",
+                            humidity: "Moderate to high humidity",
+                            temperature: "65-75°F (18-24°C)"
+                        }
+                    }
+                ];
+                
+                return plants[Math.floor(Math.random() * plants.length)];
+            }
+
+            displayPlantResults(plantData) {
+                this.hideAllSections();
+                this.resultsSection.classList.remove('hidden');
+
+                this.plantDetails.innerHTML = `
+                    <div class="plant-info">
+                        <h3>${plantData.name}</h3>
+                        <p class="scientific-name">${plantData.scientificName}</p>
+                        <p>${plantData.description}</p>
+                        <span class="confidence">${plantData.confidence}% Confidence</span>
+                    </div>
+                    <div class="plant-info">
+                        <h3>Common Names</h3>
+                        <p>${plantData.commonNames.join(', ')}</p>
+                    </div>
+                    <div class="plant-info">
+                        <h3>Care Instructions</h3>
+                        <p><strong>Light:</strong> ${plantData.care.light}</p>
+                        <p><strong>Water:</strong> ${plantData.care.water}</p>
+                        <p><strong>Humidity:</strong> ${plantData.care.humidity}</p>
+                        <p><strong>Temperature:</strong> ${plantData.care.temperature}</p>
+                    </div>
+                `;
+            }
+
+            resetToCamera() {
+                this.hideAllSections();
+                this.cameraSection.classList.remove('hidden');
+            }
+
+            retry() {
+                this.initializeCamera();
+            }
+
+            showError(message) {
+                this.hideAllSections();
+                this.errorMessage.textContent = message;
+                this.errorSection.classList.remove('hidden');
+            }
+
+            hideAllSections() {
+                this.cameraSection.classList.add('hidden');
+                this.uploadSection.classList.add('hidden');
+                this.imagePreview.classList.add('hidden');
+                this.loadingSection.classList.add('hidden');
+                this.resultsSection.classList.add('hidden');
+                this.errorSection.classList.add('hidden');
+            }
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', () => {
+            new SimplePlantApp();
+        });
+    </script>
+</body>
+</html>
