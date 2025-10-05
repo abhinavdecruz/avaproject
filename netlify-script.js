@@ -26,6 +26,9 @@ class AvasPlantIdentifier {
         this.identifyBtn = document.getElementById('identifyBtn');
         this.identifyAnotherBtn = document.getElementById('identifyAnotherBtn');
         this.retryBtn = document.getElementById('retryBtn');
+        this.requestCameraBtn = document.getElementById('requestCameraBtn');
+        this.uploadBtn = document.getElementById('uploadBtn');
+        this.fileInput = document.getElementById('fileInput');
         this.themeToggle = document.getElementById('themeToggle');
         this.galleryBtn = document.getElementById('galleryBtn');
         this.backToCameraBtn = document.getElementById('backToCameraBtn');
@@ -65,6 +68,9 @@ class AvasPlantIdentifier {
         this.identifyBtn?.addEventListener('click', () => this.identifyPlant());
         this.identifyAnotherBtn?.addEventListener('click', () => this.resetToCamera());
         this.retryBtn?.addEventListener('click', () => this.retry());
+        this.requestCameraBtn?.addEventListener('click', () => this.requestCameraPermission());
+        this.uploadBtn?.addEventListener('click', () => this.fileInput.click());
+        this.fileInput?.addEventListener('change', (e) => this.handleFileUpload(e));
         
         // Theme and navigation
         this.themeToggle?.addEventListener('click', () => this.toggleTheme());
@@ -110,27 +116,56 @@ class AvasPlantIdentifier {
 
     async initializeCamera() {
         try {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                throw new Error('Camera access not supported on this device');
+            // Check if we're on HTTPS or localhost
+            const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+            
+            if (!isSecure) {
+                throw new Error('Camera requires HTTPS. Please use https://your-site.netlify.app');
             }
 
-            this.stream = await navigator.mediaDevices.getUserMedia({
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Camera access not supported on this device or browser');
+            }
+
+            // Request camera with more specific constraints
+            const constraints = {
                 video: {
                     facingMode: this.currentFacingMode,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
-            });
+                    width: { ideal: 1280, max: 1920 },
+                    height: { ideal: 720, max: 1080 }
+                },
+                audio: false
+            };
+
+            this.stream = await navigator.mediaDevices.getUserMedia(constraints);
 
             this.video.srcObject = this.stream;
-            this.video.play();
+            
+            // Wait for video to be ready
+            this.video.onloadedmetadata = () => {
+                this.video.play().catch(e => console.warn('Video play failed:', e));
+            };
             
             this.hideAllSections();
             this.cameraSection.style.display = 'block';
             
         } catch (error) {
             console.error('Error accessing camera:', error);
-            this.showError('Unable to access camera. Please ensure camera permissions are granted.');
+            let errorMessage = 'Unable to access camera. ';
+            
+            if (error.name === 'NotAllowedError') {
+                errorMessage += 'Please allow camera permissions and refresh the page.';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage += 'No camera found on this device.';
+            } else if (error.name === 'NotSupportedError') {
+                errorMessage += 'Camera not supported. Please use HTTPS.';
+            } else if (error.message.includes('HTTPS')) {
+                errorMessage = error.message;
+            } else {
+                errorMessage += 'Please check your camera permissions and try again.';
+            }
+            
+            this.showError(errorMessage);
         }
     }
 
@@ -695,6 +730,72 @@ Options:
 
     retry() {
         this.initializeCamera();
+    }
+
+    async requestCameraPermission() {
+        try {
+            // First check if we can query permissions
+            if (navigator.permissions) {
+                const permission = await navigator.permissions.query({ name: 'camera' });
+                console.log('Camera permission state:', permission.state);
+                
+                if (permission.state === 'denied') {
+                    this.showError('Camera permission was denied. Please enable it in your browser settings and refresh the page.');
+                    return;
+                }
+            }
+
+            // Try to get camera access
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            
+            // If successful, stop the test stream and initialize properly
+            stream.getTracks().forEach(track => track.stop());
+            
+            this.showNotification('Camera permission granted! 🎉', 'success');
+            setTimeout(() => {
+                this.initializeCamera();
+            }, 1000);
+            
+        } catch (error) {
+            console.error('Camera permission request failed:', error);
+            this.showError('Could not access camera. Please check your browser settings and ensure the site is using HTTPS.');
+        }
+    }
+
+    handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Check if it's an image
+        if (!file.type.startsWith('image/')) {
+            this.showError('Please select an image file.');
+            return;
+        }
+
+        // Create a FileReader to convert file to data URL
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const imageDataUrl = e.target.result;
+            this.capturedImage.src = imageDataUrl;
+            
+            // Draw the uploaded image to canvas for processing
+            const img = new Image();
+            img.onload = () => {
+                this.canvas.width = img.width;
+                this.canvas.height = img.height;
+                const context = this.canvas.getContext('2d');
+                context.drawImage(img, 0, 0);
+                
+                // Add to photo history
+                this.addToPhotoHistory(imageDataUrl);
+                
+                // Show image preview
+                this.hideAllSections();
+                this.imagePreview.style.display = 'block';
+            };
+            img.src = imageDataUrl;
+        };
+        reader.readAsDataURL(file);
     }
 
     showError(message) {

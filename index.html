@@ -85,9 +85,28 @@
             <div id="errorSection" class="error-section" style="display: none;">
                 <div class="error-container">
                     <i class="fas fa-exclamation-triangle"></i>
-                    <h3>Oops! Something went wrong</h3>
+                    <h3>Camera Access Required</h3>
                     <p id="errorMessage">Unable to access camera or identify plant</p>
-                    <button id="retryBtn" class="btn btn-primary">Try Again</button>
+                    <div class="error-actions">
+                        <button id="retryBtn" class="btn btn-primary">Try Again</button>
+                        <button id="requestCameraBtn" class="btn btn-secondary">Request Camera Permission</button>
+                    </div>
+                    <div class="camera-tips">
+                        <h4>Camera Tips:</h4>
+                        <ul>
+                            <li>Make sure you're using HTTPS (https://your-site.netlify.app)</li>
+                            <li>Allow camera permissions when prompted</li>
+                            <li>Try refreshing the page</li>
+                            <li>Use a modern browser (Chrome, Safari, Firefox)</li>
+                        </ul>
+                        <div style="margin-top: 1rem; text-align: center;">
+                            <p style="margin-bottom: 1rem;">Or upload a photo instead:</p>
+                            <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                            <button id="uploadBtn" class="btn btn-secondary">
+                                <i class="fas fa-upload"></i> Upload Photo
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
