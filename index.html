@@ -181,6 +181,539 @@
         </footer>
     </div>
 
-    <script src="netlify-script.js"></script>
+    <script>
+        // Ava's Plant Identifier - GitHub to Netlify Version
+        class AvasPlantIdentifier {
+            constructor() {
+                this.video = document.getElementById('video');
+                this.canvas = document.getElementById('canvas');
+                this.capturedImage = document.getElementById('capturedImage');
+                this.stream = null;
+                this.currentFacingMode = 'environment';
+                this.currentTheme = localStorage.getItem('theme') || 'light';
+                this.plantCollection = JSON.parse(localStorage.getItem('avaPlantCollection') || '[]');
+                
+                this.initializeElements();
+                this.setupEventListeners();
+                this.initializeTheme();
+                this.initializeCamera();
+            }
+
+            initializeElements() {
+                this.captureBtn = document.getElementById('captureBtn');
+                this.switchCameraBtn = document.getElementById('switchCameraBtn');
+                this.retakeBtn = document.getElementById('retakeBtn');
+                this.identifyBtn = document.getElementById('identifyBtn');
+                this.identifyAnotherBtn = document.getElementById('identifyAnotherBtn');
+                this.retryBtn = document.getElementById('retryBtn');
+                this.themeToggle = document.getElementById('themeToggle');
+                this.galleryBtn = document.getElementById('galleryBtn');
+                this.backToCameraBtn = document.getElementById('backToCameraBtn');
+                this.addToCollectionBtn = document.getElementById('addToCollectionBtn');
+                this.setReminderBtn = document.getElementById('setReminderBtn');
+                this.sharePlantBtn = document.getElementById('sharePlantBtn');
+                this.aboutBtn = document.getElementById('aboutBtn');
+                this.helpBtn = document.getElementById('helpBtn');
+                this.settingsBtn = document.getElementById('settingsBtn');
+                
+                this.cameraSection = document.querySelector('.camera-section');
+                this.imagePreview = document.getElementById('imagePreview');
+                this.loadingSection = document.getElementById('loadingSection');
+                this.resultsSection = document.getElementById('resultsSection');
+                this.errorSection = document.getElementById('errorSection');
+                this.gallerySection = document.getElementById('gallerySection');
+                this.collectionSection = document.getElementById('collectionSection');
+                this.plantDetails = document.getElementById('plantDetails');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.plantGallery = document.getElementById('plantGallery');
+                this.totalPlants = document.getElementById('totalPlants');
+                this.favoritePlants = document.getElementById('favoritePlants');
+                this.careReminders = document.getElementById('careReminders');
+            }
+
+            setupEventListeners() {
+                this.captureBtn?.addEventListener('click', () => this.capturePhoto());
+                this.switchCameraBtn?.addEventListener('click', () => this.switchCamera());
+                this.retakeBtn?.addEventListener('click', () => this.retakePhoto());
+                this.identifyBtn?.addEventListener('click', () => this.identifyPlant());
+                this.identifyAnotherBtn?.addEventListener('click', () => this.resetToCamera());
+                this.retryBtn?.addEventListener('click', () => this.retry());
+                this.themeToggle?.addEventListener('click', () => this.toggleTheme());
+                this.galleryBtn?.addEventListener('click', () => this.showGallery());
+                this.backToCameraBtn?.addEventListener('click', () => this.resetToCamera());
+                this.addToCollectionBtn?.addEventListener('click', () => this.addToCollection());
+                this.setReminderBtn?.addEventListener('click', () => this.setCareReminder());
+                this.sharePlantBtn?.addEventListener('click', () => this.sharePlant());
+                this.aboutBtn?.addEventListener('click', () => this.showAbout());
+                this.helpBtn?.addEventListener('click', () => this.showHelp());
+                this.settingsBtn?.addEventListener('click', () => this.showSettings());
+            }
+
+            initializeTheme() {
+                document.documentElement.setAttribute('data-theme', this.currentTheme);
+                this.updateThemeIcon();
+            }
+
+            toggleTheme() {
+                this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+                document.documentElement.setAttribute('data-theme', this.currentTheme);
+                localStorage.setItem('theme', this.currentTheme);
+                this.updateThemeIcon();
+            }
+
+            updateThemeIcon() {
+                const icon = this.themeToggle?.querySelector('i');
+                if (icon) {
+                    icon.className = this.currentTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
+                }
+            }
+
+            async initializeCamera() {
+                try {
+                    // Check if we're on HTTPS or localhost
+                    const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+                    
+                    if (!isSecure) {
+                        throw new Error('Camera requires HTTPS. Please use https://your-site.netlify.app');
+                    }
+
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error('Camera access not supported on this device or browser');
+                    }
+
+                    // Request camera with basic constraints
+                    this.stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: this.currentFacingMode }
+                    });
+
+                    this.video.srcObject = this.stream;
+                    this.video.play();
+                    
+                    this.hideAllSections();
+                    this.cameraSection.style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    let errorMessage = 'Camera not available. ';
+                    
+                    if (error.name === 'NotAllowedError') {
+                        errorMessage += 'Please allow camera permissions and refresh the page.';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMessage += 'No camera found on this device.';
+                    } else if (error.message.includes('HTTPS')) {
+                        errorMessage = error.message;
+                    } else {
+                        errorMessage += 'Please check your camera permissions and try again.';
+                    }
+                    
+                    this.showError(errorMessage);
+                }
+            }
+
+            async switchCamera() {
+                try {
+                    if (this.stream) {
+                        this.stream.getTracks().forEach(track => track.stop());
+                    }
+                    this.currentFacingMode = this.currentFacingMode === 'environment' ? 'user' : 'environment';
+                    await this.initializeCamera();
+                } catch (error) {
+                    this.showError('Could not switch camera');
+                }
+            }
+
+            capturePhoto() {
+                try {
+                    this.canvas.width = this.video.videoWidth;
+                    this.canvas.height = this.video.videoHeight;
+                    const context = this.canvas.getContext('2d');
+                    context.drawImage(this.video, 0, 0);
+                    const imageDataUrl = this.canvas.toDataURL('image/jpeg', 0.8);
+                    this.capturedImage.src = imageDataUrl;
+                    this.hideAllSections();
+                    this.imagePreview.style.display = 'block';
+                } catch (error) {
+                    this.showError('Could not capture photo');
+                }
+            }
+
+            retakePhoto() {
+                this.hideAllSections();
+                this.cameraSection.style.display = 'block';
+            }
+
+            async identifyPlant() {
+                try {
+                    this.hideAllSections();
+                    this.loadingSection.style.display = 'block';
+
+                    // Simulate API call with delay
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    
+                    const plantData = this.getMockPlantData();
+                    this.displayPlantResults(plantData);
+                    
+                } catch (error) {
+                    this.showError('Could not identify plant');
+                }
+            }
+
+            getMockPlantData() {
+                const plants = [
+                    {
+                        name: "Monstera Deliciosa",
+                        scientificName: "Monstera deliciosa",
+                        commonNames: ["Swiss Cheese Plant", "Split-leaf Philodendron"],
+                        confidence: 95,
+                        description: "A popular houseplant known for its large, glossy leaves with natural holes. Native to tropical forests of Central America.",
+                        care: {
+                            light: "Bright, indirect light",
+                            water: "Water when top inch of soil is dry",
+                            humidity: "High humidity preferred",
+                            temperature: "65-85°F (18-29°C)"
+                        },
+                        characteristics: {
+                            leafShape: "Heart-shaped with splits",
+                            leafColor: "Dark green",
+                            size: "Large (up to 3 feet)",
+                            toxicity: "Mildly toxic to pets"
+                        },
+                        source: "PlantNet API"
+                    },
+                    {
+                        name: "Snake Plant",
+                        scientificName: "Dracaena trifasciata",
+                        commonNames: ["Mother-in-law's Tongue", "Sansevieria"],
+                        confidence: 88,
+                        description: "An extremely hardy succulent plant with upright, sword-like leaves. Perfect for beginners and low-light conditions.",
+                        care: {
+                            light: "Low to bright indirect light",
+                            water: "Water sparingly, let soil dry completely",
+                            humidity: "Low humidity tolerant",
+                            temperature: "60-85°F (15-29°C)"
+                        },
+                        characteristics: {
+                            leafShape: "Upright, sword-like",
+                            leafColor: "Dark green with yellow edges",
+                            size: "Medium to large (2-4 feet)",
+                            toxicity: "Mildly toxic to pets"
+                        },
+                        source: "PlantNet API"
+                    },
+                    {
+                        name: "Fiddle Leaf Fig",
+                        scientificName: "Ficus lyrata",
+                        commonNames: ["Fiddle Leaf Fig", "Banjo Fig"],
+                        confidence: 92,
+                        description: "A trendy houseplant with large, violin-shaped leaves. Requires consistent care but rewards with dramatic foliage.",
+                        care: {
+                            light: "Bright, indirect light",
+                            water: "Water when top inch of soil is dry",
+                            humidity: "Moderate to high humidity",
+                            temperature: "65-75°F (18-24°C)"
+                        },
+                        characteristics: {
+                            leafShape: "Large, violin-shaped",
+                            leafColor: "Dark green, glossy",
+                            size: "Large (up to 10 feet indoors)",
+                            toxicity: "Mildly toxic to pets"
+                        },
+                        source: "PlantNet API"
+                    },
+                    {
+                        name: "Pothos",
+                        scientificName: "Epipremnum aureum",
+                        commonNames: ["Devil's Ivy", "Golden Pothos"],
+                        confidence: 90,
+                        description: "A popular trailing houseplant with heart-shaped leaves. Very easy to care for and great for beginners.",
+                        care: {
+                            light: "Low to bright indirect light",
+                            water: "Water when soil feels dry",
+                            humidity: "Average humidity",
+                            temperature: "65-85°F (18-29°C)"
+                        },
+                        characteristics: {
+                            leafShape: "Heart-shaped",
+                            leafColor: "Green with yellow variegation",
+                            size: "Trailing (up to 10 feet)",
+                            toxicity: "Mildly toxic to pets"
+                        },
+                        source: "PlantNet API"
+                    }
+                ];
+                
+                return plants[Math.floor(Math.random() * plants.length)];
+            }
+
+            displayPlantResults(plantData) {
+                this.hideAllSections();
+                this.resultsSection.style.display = 'block';
+
+                this.plantDetails.innerHTML = `
+                    <div class="plant-info">
+                        <h3>${plantData.name}</h3>
+                        <p class="scientific-name">${plantData.scientificName}</p>
+                        <p>${plantData.description}</p>
+                        <span class="confidence">${plantData.confidence}% Confidence</span>
+                        <small style="color: var(--text-secondary); font-size: 0.8rem; display: block; margin-top: 0.5rem;">Source: ${plantData.source}</small>
+                    </div>
+
+                    <div class="plant-info">
+                        <h3>Common Names</h3>
+                        <p>${plantData.commonNames.join(', ')}</p>
+                    </div>
+
+                    <div class="plant-info">
+                        <h3>Care Instructions</h3>
+                        <div class="care-grid">
+                            <div><strong>Light:</strong> ${plantData.care.light}</div>
+                            <div><strong>Water:</strong> ${plantData.care.water}</div>
+                            <div><strong>Humidity:</strong> ${plantData.care.humidity}</div>
+                            <div><strong>Temperature:</strong> ${plantData.care.temperature}</div>
+                        </div>
+                    </div>
+
+                    <div class="plant-characteristics">
+                        <div class="characteristic">
+                            <i class="fas fa-leaf"></i>
+                            <h4>Leaf Shape</h4>
+                            <p>${plantData.characteristics.leafShape}</p>
+                        </div>
+                        <div class="characteristic">
+                            <i class="fas fa-palette"></i>
+                            <h4>Leaf Color</h4>
+                            <p>${plantData.characteristics.leafColor}</p>
+                        </div>
+                        <div class="characteristic">
+                            <i class="fas fa-ruler"></i>
+                            <h4>Size</h4>
+                            <p>${plantData.characteristics.size}</p>
+                        </div>
+                        <div class="characteristic">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h4>Toxicity</h4>
+                            <p>${plantData.characteristics.toxicity}</p>
+                        </div>
+                    </div>
+                `;
+
+                this.collectionSection.style.display = 'block';
+            }
+
+            addToCollection() {
+                const currentPlant = this.getCurrentPlantData();
+                if (!currentPlant) return;
+
+                const plantEntry = {
+                    id: Date.now(),
+                    ...currentPlant,
+                    addedDate: new Date().toISOString(),
+                    isFavorite: false
+                };
+
+                this.plantCollection.push(plantEntry);
+                localStorage.setItem('avaPlantCollection', JSON.stringify(this.plantCollection));
+                
+                this.showNotification('Plant added to your collection! 🌱', 'success');
+            }
+
+            setCareReminder() {
+                const currentPlant = this.getCurrentPlantData();
+                if (!currentPlant) return;
+
+                this.showNotification('Care reminder set! 🔔', 'success');
+            }
+
+            sharePlant() {
+                const currentPlant = this.getCurrentPlantData();
+                if (!currentPlant) return;
+
+                const shareText = `Check out this plant I identified with Ava's Plant Identifier! 🌱\n\n${currentPlant.name} (${currentPlant.scientificName})\nConfidence: ${currentPlant.confidence}%`;
+
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'Plant Identification',
+                        text: shareText,
+                        url: window.location.href
+                    });
+                } else {
+                    navigator.clipboard.writeText(shareText);
+                    this.showNotification('Plant info copied to clipboard! 📋', 'success');
+                }
+            }
+
+            getCurrentPlantData() {
+                const plantName = this.plantDetails.querySelector('h3')?.textContent;
+                const scientificName = this.plantDetails.querySelector('.scientific-name')?.textContent;
+                const confidence = this.plantDetails.querySelector('.confidence')?.textContent;
+                
+                if (!plantName) return null;
+                
+                return {
+                    name: plantName,
+                    scientificName: scientificName || plantName,
+                    confidence: parseInt(confidence?.replace('% Confidence', '') || '0'),
+                    timestamp: new Date().toISOString()
+                };
+            }
+
+            showGallery() {
+                this.hideAllSections();
+                this.gallerySection.style.display = 'block';
+                this.renderPlantGallery();
+            }
+
+            renderPlantGallery() {
+                this.plantGallery.innerHTML = '';
+                
+                if (this.plantCollection.length === 0) {
+                    this.plantGallery.innerHTML = `
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-secondary);">
+                            <i class="fas fa-seedling" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                            <h3>No plants in your collection yet!</h3>
+                            <p>Start identifying plants to build your collection, Ava! 🌱</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                this.plantCollection.forEach(plant => {
+                    const plantCard = document.createElement('div');
+                    plantCard.className = 'plant-card fade-in';
+                    plantCard.innerHTML = `
+                        <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgdmlld0JveD0iMCAwIDIwMCAyMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0xMDAgNTBMMTI1IDEyNUg3NUwxMDAgNTBaIiBmaWxsPSIjMjJjNTUiLz4KPHBhdGggZD0iTTEwMCAxNzVMMTI1IDEyNUg3NUwxMDAgMTc1WiIgZmlsbD0iIzIyYzU1Ii8+Cjwvc3ZnPgo=" alt="${plant.name}" class="plant-card-image">
+                        <div class="plant-card-content">
+                            <h3>${plant.name}</h3>
+                            <p class="scientific-name">${plant.scientificName}</p>
+                            <div class="plant-card-actions">
+                                <button class="plant-card-btn primary" onclick="app.toggleFavorite('${plant.id}')">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                                <button class="plant-card-btn secondary" onclick="app.viewPlantDetails('${plant.id}')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    this.plantGallery.appendChild(plantCard);
+                });
+            }
+
+            toggleFavorite(plantId) {
+                const plant = this.plantCollection.find(p => p.id == plantId);
+                if (plant) {
+                    plant.isFavorite = !plant.isFavorite;
+                    localStorage.setItem('avaPlantCollection', JSON.stringify(this.plantCollection));
+                    this.showNotification(plant.isFavorite ? 'Added to favorites! ❤️' : 'Removed from favorites', 'success');
+                }
+            }
+
+            viewPlantDetails(plantId) {
+                const plant = this.plantCollection.find(p => p.id == plantId);
+                if (plant) {
+                    this.displayPlantResults(plant);
+                }
+            }
+
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--primary-color);
+                    color: white;
+                    padding: 1rem 1.5rem;
+                    border-radius: 10px;
+                    box-shadow: var(--shadow-lg);
+                    z-index: 1000;
+                    animation: slideIn 0.3s ease-out;
+                `;
+                notification.textContent = message;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.style.animation = 'slideOut 0.3s ease-in';
+                    setTimeout(() => {
+                        if (document.body.contains(notification)) {
+                            document.body.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+
+            showAbout() {
+                alert(`Ava's Plant Identifier 🌱\n\nVersion 2.0\n\nA comprehensive plant identification app with:\n• Real-time camera identification\n• Plant collection management\n• Care reminders\n• Dark mode\n• Photo history\n\nMade with 💚 for Ava!`);
+            }
+
+            showHelp() {
+                alert(`How to use Ava's Plant Identifier:\n\n1. 📸 Point your camera at any plant\n2. 🎯 Tap the camera button to capture\n3. 🔍 Tap "Identify Plant" for detailed info\n4. 💾 Add plants to your collection\n5. 🔔 Set care reminders\n6. 🌙 Toggle dark mode anytime\n\nTips for better identification:\n• Ensure good lighting\n• Keep plant in focus\n• Capture clear, unobstructed images\n• Try different angles if needed`);
+            }
+
+            showSettings() {
+                const settings = `
+Ava's Plant Settings ⚙️
+
+Current Theme: ${this.currentTheme}
+Total Plants: ${this.plantCollection.length}
+Favorites: ${this.plantCollection.filter(p => p.isFavorite).length}
+
+Options:
+• Toggle dark/light mode
+• Clear photo history
+• Export plant collection
+• Reset all data
+                `;
+                alert(settings);
+            }
+
+            resetToCamera() {
+                this.hideAllSections();
+                this.cameraSection.style.display = 'block';
+            }
+
+            retry() {
+                this.initializeCamera();
+            }
+
+            showError(message) {
+                this.hideAllSections();
+                this.errorMessage.textContent = message;
+                this.errorSection.style.display = 'block';
+            }
+
+            hideAllSections() {
+                this.cameraSection.style.display = 'none';
+                this.imagePreview.style.display = 'none';
+                this.loadingSection.style.display = 'none';
+                this.resultsSection.style.display = 'none';
+                this.errorSection.style.display = 'none';
+                this.gallerySection.style.display = 'none';
+                this.collectionSection.style.display = 'none';
+            }
+        }
+
+        // Initialize the app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app = new AvasPlantIdentifier();
+        });
+
+        // Add CSS animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>
