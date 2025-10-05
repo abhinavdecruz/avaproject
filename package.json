@@ -1,0 +1,27 @@
+{
+  "name": "plant-identifier-app",
+  "version": "1.0.0",
+  "description": "A mobile-friendly web app that uses camera to identify plants",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "python -m http.server 8000",
+    "build": "echo 'No build process needed for static files'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "plant-identification",
+    "camera",
+    "mobile",
+    "web-app",
+    "botany",
+    "ai"
+  ],
+  "author": "Plant Identifier Team",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

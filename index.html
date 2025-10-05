@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Identifier - Camera App</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-seedling"></i> Plant Identifier</h1>
+            <p>Point your camera at any plant to identify it instantly</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Camera Section -->
+            <div class="camera-section">
+                <div class="camera-container">
+                    <video id="video" autoplay muted playsinline></video>
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    <div class="camera-overlay">
+                        <div class="focus-frame"></div>
+                        <div class="camera-controls">
+                            <button id="captureBtn" class="capture-btn">
+                                <i class="fas fa-camera"></i>
+                            </button>
+                            <button id="switchCameraBtn" class="switch-btn">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Preview Section -->
+            <div id="imagePreview" class="image-preview" style="display: none;">
+                <div class="preview-container">
+                    <img id="capturedImage" alt="Captured plant">
+                    <div class="preview-controls">
+                        <button id="retakeBtn" class="btn btn-secondary">
+                            <i class="fas fa-redo"></i> Retake
+                        </button>
+                        <button id="identifyBtn" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Identify Plant
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Section -->
+            <div id="loadingSection" class="loading-section" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Analyzing your plant...</p>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section" style="display: none;">
+                <div class="results-container">
+                    <h2><i class="fas fa-leaf"></i> Plant Identification Results</h2>
+                    <div id="plantDetails" class="plant-details">
+                        <!-- Plant details will be populated here -->
+                    </div>
+                    <div class="results-actions">
+                        <button id="identifyAnotherBtn" class="btn btn-primary">
+                            <i class="fas fa-camera"></i> Identify Another Plant
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Section -->
+            <div id="errorSection" class="error-section" style="display: none;">
+                <div class="error-container">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Oops! Something went wrong</h3>
+                    <p id="errorMessage">Unable to access camera or identify plant</p>
+                    <button id="retryBtn" class="btn btn-primary">Try Again</button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Powered by AI Plant Recognition Technology</p>
+        </footer>
+    </div>
+
+    <script src="plant-api.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
