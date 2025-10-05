@@ -5,7 +5,7 @@ class PlantIdentificationAPI {
         this.apiKeys = {
             plantNet: '2b10x83uNKCIS37PaJL1tjjT9',
             plantId: 'YOUR_PLANTID_API_KEY',
-            googleVision: 'YOUR_GOOGLE_VISION_API_KEY'
+            googleVision: 'AIzaSyD21A5-u-4rAsWHaltYYkJCW5PAq4WW7LQ'
         };
         
         this.apiEndpoints = {
